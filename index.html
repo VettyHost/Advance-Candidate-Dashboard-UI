@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidate Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            color: #334155;
+        }
+        .status-badge {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+            position: relative;
+            z-index: 10;
+        }
+        .status-badge:hover {
+            filter: brightness(0.9);
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 50;
+            background: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            min-width: 220px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .dropdown-menu.active {
+            display: block;
+        }
+        .custom-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+        }
+        input:checked + .custom-checkbox {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+        input:checked + .custom-checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 10px;
+        }
+        .table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        th {
+            background-color: #f1f5f9;
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
+        }
+        #status-slider {
+            position: absolute;
+            bottom: -8px;
+            height: 3px;
+            background-color: #3b82f6;
+            border-radius: 2px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            opacity: 0;
+        }
+        #status-slider.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="h-16 bg-white border-b flex items-center justify-between px-8">
+        <div class="flex items-center space-x-4">
+            <h1 class="text-lg font-bold text-slate-800">Candidate Dashboard</h1>
+        </div>
+        <div class="flex items-center space-x-6">
+            <div class="relative">
+                <input type="text" placeholder="Search for a Candidate" class="bg-slate-100 rounded-full py-1.5 px-4 pl-10 text-sm w-64 focus:outline-none border border-transparent focus:border-blue-400">
+                <i class="fa fa-search absolute left-3.5 top-2.5 text-slate-400 text-xs"></i>
+            </div>
+            <div class="flex items-center space-x-3">
+                <i class="fa fa-bell text-slate-400 relative">
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-[8px] text-white rounded-full w-3 h-3 flex items-center justify-center">0</span>
+                </i>
+                <div class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">DR</div>
+                <span class="text-sm font-medium">Debendu Roy</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toolbar -->
+    <div class="bg-white border-b px-8 py-3 flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div class="flex items-center space-x-6">
+            <span class="flex items-center space-x-1 cursor-pointer"><i class="fa fa-user-plus"></i> <span>Assignee</span></span>
+            <span class="flex items-center space-x-1 cursor-pointer"><i class="fa fa-user-minus"></i> <span>Withdraw</span></span>
+            <span class="flex items-center space-x-1 cursor-pointer"><i class="fa fa-archive"></i> <span>Archive</span></span>
+            <span class="flex items-center space-x-1 cursor-pointer"><i class="fa fa-check-circle"></i> <span>Vetty Comply</span></span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <i class="fa fa-sliders cursor-pointer"></i>
+            <i class="fa fa-upload cursor-pointer text-blue-500"></i>
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-md font-bold flex items-center space-x-2">
+                <span>New Candidate</span>
+                <i class="fa fa-chevron-down text-[10px]"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="p-8 pb-4">
+        <div class="flex flex-wrap gap-4 items-center">
+            <div class="relative flex-1 max-w-[200px]">
+                <input type="text" id="candidate-search" placeholder="Enter Candidate Name" class="w-full border rounded px-3 py-2 text-sm focus:outline-none">
+                <i class="fa fa-search absolute right-3 top-3 text-slate-300"></i>
+            </div>
+            <select class="border rounded px-3 py-2 text-sm text-slate-600 bg-white"><option>Within The Last 90 Days</option></select>
+            <select class="border rounded px-3 py-2 text-sm text-slate-600 bg-white"><option>Users</option></select>
+            <select class="border rounded px-3 py-2 text-sm text-slate-600 bg-white"><option>Statuses</option></select>
+            <select class="border rounded px-3 py-2 text-sm text-slate-600 bg-white"><option>Alerts</option></select>
+            <span id="reset-filters" class="text-slate-400 text-sm cursor-pointer ml-auto hover:text-blue-600">Reset</span>
+            <span class="text-blue-600 text-sm font-bold cursor-pointer">More</span>
+            <i class="fa fa-ellipsis-v text-slate-400 cursor-pointer"></i>
+        </div>
+
+        <!-- Dynamic Status Badges Area -->
+        <div class="flex items-center gap-2 mt-4 relative">
+            <div id="badge-container" class="flex items-center gap-2 relative">
+                <div id="status-slider"></div>
+
+                <div id="badge-in-progress" class="status-badge bg-[#2563eb] text-white px-3 py-1.5 rounded text-[11px] font-bold" onclick="filterByBadge('in_progress', this)">
+                    00 In Progress
+                </div>
+                <div id="badge-clear" class="status-badge bg-[#4ade80] text-white px-3 py-1.5 rounded text-[11px] font-bold" onclick="filterByBadge('ready_onboarding', this)">
+                    00 Clear
+                </div>
+                <div id="badge-review" class="status-badge bg-[#fbbf24] text-white px-3 py-1.5 rounded text-[11px] font-bold" onclick="filterByBadge('review_needed', this)">
+                    00 Review Needed
+                </div>
+                <div id="badge-pending" class="status-badge bg-[#94a3b8] text-white px-3 py-1.5 rounded text-[11px] font-bold" onclick="filterByBadge('pending_candidate', this)">
+                    00 Pending
+                </div>
+            </div>
+
+            <div class="relative">
+                <button id="status-dots-btn" class="p-1 hover:bg-slate-100 rounded text-slate-400">
+                    <i class="fa fa-ellipsis-v"></i>
+                </button>
+                <div id="status-dropdown" class="dropdown-menu p-2">
+                    <div class="px-2 py-1 text-[10px] uppercase font-bold text-slate-400 mb-1 border-b pb-2">Select Statuses</div>
+                    <div id="status-list" class="space-y-1"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="px-8 pb-8 flex-1">
+        <div class="table-container shadow-sm">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr>
+                        <th class="w-10"><input type="checkbox" class="rounded"></th>
+                        <th>Candidate Name</th>
+                        <th>Created Date <i class="fa fa-chevron-down text-[10px] ml-1"></i></th>
+                        <th>Created By</th>
+                        <th>Package</th>
+                        <th>Status</th>
+                        <th>Alerts</th>
+                        <th class="w-10"></th>
+                        <th class="w-10"></th>
+                        <th class="w-10"></th>
+                        <th class="w-10"></th>
+                    </tr>
+                </thead>
+                <tbody id="candidate-table-body"></tbody>
+            </table>
+        </div>
+        <div id="empty-state" class="hidden py-20 text-center text-slate-400">
+            <i class="fa fa-search text-4xl mb-4 opacity-20"></i>
+            <p>No candidates match the selected filters.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const statusDefinitions = [
+        { id: 'applicant_created', name: 'Applicant Created', color: 'bg-slate-400' },
+        { id: 'pending_candidate', name: 'Pending Candidate', color: 'bg-slate-300' },
+        { id: 'in_progress', name: 'In Progress', color: 'bg-blue-500' },
+        { id: 'review_needed', name: 'Review Needed', color: 'bg-amber-400' },
+        { id: 'inconclusive', name: 'Inconclusive', color: 'bg-orange-300' },
+        { id: 'error', name: 'Error', color: 'bg-rose-500' },
+        { id: 'withdrawn', name: 'Withdrawn/De-Activated', color: 'bg-slate-200' },
+        { id: 'clear', name: 'Clear', color: 'bg-green-400' },
+        { id: 'archived', name: 'Archived', color: 'bg-slate-500' },
+        { id: 'approval_needed', name: 'Approval Needed', color: 'bg-indigo-400' },
+        { id: 'pre_adverse', name: 'Pre Adverse Action', color: 'bg-red-300' },
+        { id: 'adverse', name: 'Adverse Action', color: 'bg-red-600' },
+        { id: 'reviewed', name: 'Reviewed', color: 'bg-emerald-500' },
+        { id: 'dispute_review', name: 'Dispute under review', color: 'bg-yellow-200' },
+        { id: 'dispute_investigation', name: 'Dispute Under Investigation', color: 'bg-yellow-400' },
+        { id: 'idv_fail', name: 'IDV fail', color: 'bg-blue-300' },
+        { id: 'not_meeting_criteria', name: "Doesn't meet Hiring Criteria", color: 'bg-stone-500' }
+    ];
+
+    // Function to generate bulk data
+    function generateBulkData() {
+        const data = [];
+        const firstNames = ['James', 'Mary', 'Robert', 'Patricia', 'John', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan'];
+        const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+        const packages = ['Healthcare', 'Only MVR', 'SSN Only', 'Full Check', 'CountyStateCrim'];
+        const creators = ['Mrunali Stageuser', 'Debendu Roy', 'Admin User'];
+
+        statusDefinitions.forEach(status => {
+            // Set specific counts to match user request: 6, 8, 9 or 33 for In Progress
+            let count = 8; 
+            if (status.id === 'in_progress') count = 33;
+            else if (status.id === 'pending_candidate') count = 12;
+            else if (status.id === 'review_needed') count = 9;
+            else if (status.id === 'clear') count = 7;
+            else if (status.id === 'reviewed') count = 6;
+            else count = Math.floor(Math.random() * 4) + 6; // Random 6-9 for others
+
+            for (let i = 0; i < count; i++) {
+                const fname = firstNames[Math.floor(Math.random() * firstNames.length)];
+                const lname = lastNames[Math.floor(Math.random() * lastNames.length)];
+                data.push({
+                    name: `${fname} ${lname} ${i + 1}`,
+                    date: `02/${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/2026`,
+                    creator: creators[Math.floor(Math.random() * creators.length)],
+                    package: packages[Math.floor(Math.random() * packages.length)],
+                    status: status.name,
+                    statusId: status.id,
+                    statusColor: status.color,
+                    alert: i % 5 === 0 ? 'Urgent Alert' : '-',
+                    alertColor: i % 5 === 0 ? 'text-rose-500' : ''
+                });
+            }
+        });
+        return data;
+    }
+
+    const candidates = generateBulkData();
+
+    const dropdownBtn = document.getElementById('status-dots-btn');
+    const dropdownMenu = document.getElementById('status-dropdown');
+    const statusListEl = document.getElementById('status-list');
+    const clearBadge = document.getElementById('badge-clear');
+    const inProgressBadge = document.getElementById('badge-in-progress');
+    const reviewBadge = document.getElementById('badge-review');
+    const pendingBadge = document.getElementById('badge-pending');
+    const tableBody = document.getElementById('candidate-table-body');
+    const slider = document.getElementById('status-slider');
+    const searchInput = document.getElementById('candidate-search');
+    const resetBtn = document.getElementById('reset-filters');
+    const emptyState = document.getElementById('empty-state');
+
+    let activeBadgeType = null; 
+    let selectedStatusIds = []; 
+
+    function getStatusCount(id) {
+        if (id === 'ready_onboarding') {
+            return candidates.filter(c => c.statusId === 'clear' || c.statusId === 'reviewed').length;
+        }
+        return candidates.filter(c => c.statusId === id).length;
+    }
+
+    function moveSlider(element) {
+        if (!element) {
+            slider.classList.remove('visible');
+            return;
+        }
+        slider.classList.add('visible');
+        slider.style.width = `${element.offsetWidth}px`;
+        slider.style.left = `${element.offsetLeft}px`;
+    }
+
+    function renderTable() {
+        const query = searchInput.value.toLowerCase();
+        
+        const filtered = candidates.filter(c => {
+            const matchesSearch = c.name.toLowerCase().includes(query);
+            if (selectedStatusIds.length > 0) return matchesSearch && selectedStatusIds.includes(c.statusId);
+            if (activeBadgeType) {
+                if (activeBadgeType === 'ready_onboarding') return matchesSearch && (c.statusId === 'clear' || c.statusId === 'reviewed');
+                return matchesSearch && c.statusId === activeBadgeType;
+            }
+            return matchesSearch;
+        });
+
+        tableBody.innerHTML = '';
+        if (filtered.length === 0) {
+            emptyState.classList.remove('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+            // Sort by name for consistency
+            filtered.sort((a,b) => a.name.localeCompare(b.name)).forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition-colors';
+                tr.innerHTML = `
+                    <td><input type="checkbox" class="rounded"></td>
+                    <td class="text-blue-600 font-medium cursor-pointer hover:underline">${row.name}</td>
+                    <td>${row.date}</td>
+                    <td>${row.creator}</td>
+                    <td>${row.package}</td>
+                    <td><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full ${row.statusColor}"></span> ${row.status}</span></td>
+                    <td class="${row.alertColor || ''}">${row.alert}</td>
+                    <td>-</td>
+                    <td><i class="fa fa-file-text text-blue-400 cursor-pointer"></i></td>
+                    <td><i class="fa fa-comment-o text-blue-400 cursor-pointer"></i></td>
+                    <td><i class="fa fa-ellipsis-v text-slate-300 cursor-pointer"></i></td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+    }
+
+    window.filterByBadge = (type, el) => {
+        selectedStatusIds = [];
+        renderStatusList();
+        if (activeBadgeType === type) { activeBadgeType = null; moveSlider(null); }
+        else { activeBadgeType = type; moveSlider(el); }
+        renderTable();
+    };
+
+    function toggleStatus(id) {
+        activeBadgeType = null;
+        moveSlider(null);
+        if (selectedStatusIds.includes(id)) selectedStatusIds = selectedStatusIds.filter(sid => sid !== id);
+        else selectedStatusIds.push(id);
+        updateBadgeVisuals();
+        renderStatusList();
+        renderTable();
+    }
+
+    function updateBadgeVisuals() {
+        const inProgressCount = getStatusCount('in_progress');
+        const reviewCount = getStatusCount('review_needed');
+        const pendingCount = getStatusCount('pending_candidate');
+        const onboardingCount = getStatusCount('ready_onboarding');
+
+        inProgressBadge.innerHTML = `${String(inProgressCount).padStart(2, '0')} In Progress`;
+        reviewBadge.innerHTML = `${String(reviewCount).padStart(2, '0')} Review Needed`;
+        pendingBadge.innerHTML = `${String(pendingCount).padStart(2, '0')} Pending`;
+
+        const hasClearOrReviewed = selectedStatusIds.includes('clear') || selectedStatusIds.includes('reviewed');
+        if (hasClearOrReviewed) {
+            let total = 0;
+            if (selectedStatusIds.includes('clear')) total += getStatusCount('clear');
+            if (selectedStatusIds.includes('reviewed')) total += getStatusCount('reviewed');
+            clearBadge.innerHTML = `${String(total).padStart(2, '0')} Ready For Onboarding`;
+            clearBadge.classList.replace('bg-[#4ade80]', 'bg-green-600');
+        } else {
+            clearBadge.innerHTML = `${String(onboardingCount).padStart(2, '0')} Ready For Onboarding`;
+            clearBadge.classList.replace('bg-green-600', 'bg-[#4ade80]');
+        }
+    }
+
+    function renderStatusList() {
+        statusListEl.innerHTML = '';
+        statusDefinitions.forEach(status => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center px-2 py-1.5 hover:bg-slate-50 cursor-pointer text-sm rounded transition-colors';
+            const isChecked = selectedStatusIds.includes(status.id);
+            const count = getStatusCount(status.id);
+            div.innerHTML = `
+                <label class="flex items-center w-full cursor-pointer">
+                    <input type="checkbox" class="hidden" ${isChecked ? 'checked' : ''}>
+                    <span class="custom-checkbox"></span>
+                    <span class="text-slate-700 flex-1">${status.name}</span>
+                    <span class="text-[10px] text-slate-400 ml-2 font-mono">${String(count).padStart(2, '0')}</span>
+                </label>
+            `;
+            div.onclick = (e) => { e.preventDefault(); toggleStatus(status.id); };
+            statusListEl.appendChild(div);
+        });
+    }
+
+    dropdownBtn.onclick = (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('active'); };
+    document.onclick = () => dropdownMenu.classList.remove('active');
+    dropdownMenu.onclick = (e) => e.stopPropagation();
+    searchInput.oninput = renderTable;
+    resetBtn.onclick = () => {
+        selectedStatusIds = []; activeBadgeType = null; searchInput.value = '';
+        moveSlider(null); updateBadgeVisuals(); renderStatusList(); renderTable();
+    };
+
+    updateBadgeVisuals();
+    renderStatusList();
+    renderTable();
+</script>
+
+</body>
+</html>

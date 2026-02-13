@@ -29,10 +29,10 @@
             left: 0;
             z-index: 50;
             background: white;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
             border: 1px solid #e2e8f0;
             border-radius: 0.5rem;
-            min-width: 220px;
+            min-width: 240px;
             max-height: 400px;
             overflow-y: auto;
         }
@@ -48,10 +48,12 @@
             align-items: center;
             justify-content: center;
             margin-right: 8px;
+            transition: all 0.2s;
         }
         input:checked + .custom-checkbox {
             background-color: #3b82f6;
             border-color: #3b82f6;
+            transform: scale(1.1);
         }
         input:checked + .custom-checkbox::after {
             content: '✓';
@@ -90,6 +92,61 @@
         }
         #status-slider.visible {
             opacity: 1;
+        }
+
+        /* Adjusted Eye-Catching Notification Badge for 2-digit numbers */
+        #filter-count-badge {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 5px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transform: scale(0);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            white-space: nowrap;
+            z-index: 20;
+        }
+        #filter-count-badge.visible {
+            transform: scale(1);
+            animation: pulse-badge 2s infinite;
+        }
+        
+        @keyframes pulse-badge {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+
+        /* Discovery Enhancement: "More" Label */
+        #more-status-hint {
+            font-size: 10px;
+            font-weight: 700;
+            color: #3b82f6;
+            margin-left: 6px;
+            background: #eff6ff;
+            padding: 1px 6px;
+            border-radius: 4px;
+            border: 1px solid #dbeafe;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            transition: opacity 0.2s;
+        }
+
+        .dots-btn-active {
+            background-color: #eff6ff !important;
+            color: #3b82f6 !important;
+            border: 1px solid #93c5fd !important;
         }
     </style>
 </head>
@@ -170,11 +227,17 @@
             </div>
 
             <div class="relative">
-                <button id="status-dots-btn" class="p-1 hover:bg-slate-100 rounded text-slate-400">
-                    <i class="fa fa-ellipsis-v"></i>
+                <!-- UI Enhancement: Dots button with "More" label for Discovery -->
+                <button id="status-dots-btn" class="p-1.5 px-3 hover:bg-slate-50 rounded text-slate-400 relative transition-all border border-slate-200 flex items-center justify-center bg-white shadow-sm">
+                    <i class="fa fa-ellipsis-v text-xs"></i>
+                    <span id="more-status-hint">More</span>
+                    <span id="filter-count-badge">0</span>
                 </button>
                 <div id="status-dropdown" class="dropdown-menu p-2">
-                    <div class="px-2 py-1 text-[10px] uppercase font-bold text-slate-400 mb-1 border-b pb-2">Select Statuses</div>
+                    <div class="px-2 py-1 text-[10px] uppercase font-bold text-slate-400 mb-1 border-b pb-2 flex justify-between items-center">
+                        <span>Select Other Statuses</span>
+                        <span id="clear-dropdown-filters" class="text-blue-600 hover:underline cursor-pointer normal-case">Clear All</span>
+                    </div>
                     <div id="status-list" class="space-y-1"></div>
                 </div>
             </div>
@@ -231,7 +294,6 @@
         { id: 'not_meeting_criteria', name: "Doesn't meet Hiring Criteria", color: 'bg-stone-500' }
     ];
 
-    // Function to generate bulk data
     function generateBulkData() {
         const data = [];
         const firstNames = ['James', 'Mary', 'Robert', 'Patricia', 'John', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan'];
@@ -240,20 +302,17 @@
         const creators = ['Mrunali Stageuser', 'Debendu Roy', 'Admin User'];
 
         statusDefinitions.forEach(status => {
-            // Set specific counts to match user request: 6, 8, 9 or 33 for In Progress
             let count = 8; 
             if (status.id === 'in_progress') count = 33;
             else if (status.id === 'pending_candidate') count = 12;
             else if (status.id === 'review_needed') count = 9;
             else if (status.id === 'clear') count = 7;
             else if (status.id === 'reviewed') count = 6;
-            else count = Math.floor(Math.random() * 4) + 6; // Random 6-9 for others
+            else count = Math.floor(Math.random() * 4) + 10; 
 
             for (let i = 0; i < count; i++) {
-                const fname = firstNames[Math.floor(Math.random() * firstNames.length)];
-                const lname = lastNames[Math.floor(Math.random() * lastNames.length)];
                 data.push({
-                    name: `${fname} ${lname} ${i + 1}`,
+                    name: `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]} ${i + 1}`,
                     date: `02/${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/2026`,
                     creator: creators[Math.floor(Math.random() * creators.length)],
                     package: packages[Math.floor(Math.random() * packages.length)],
@@ -269,8 +328,9 @@
     }
 
     const candidates = generateBulkData();
-
     const dropdownBtn = document.getElementById('status-dots-btn');
+    const filterBadgeCount = document.getElementById('filter-count-badge');
+    const moreHintLabel = document.getElementById('more-status-hint');
     const dropdownMenu = document.getElementById('status-dropdown');
     const statusListEl = document.getElementById('status-list');
     const clearBadge = document.getElementById('badge-clear');
@@ -282,6 +342,7 @@
     const searchInput = document.getElementById('candidate-search');
     const resetBtn = document.getElementById('reset-filters');
     const emptyState = document.getElementById('empty-state');
+    const clearDropdownBtn = document.getElementById('clear-dropdown-filters');
 
     let activeBadgeType = null; 
     let selectedStatusIds = []; 
@@ -305,7 +366,6 @@
 
     function renderTable() {
         const query = searchInput.value.toLowerCase();
-        
         const filtered = candidates.filter(c => {
             const matchesSearch = c.name.toLowerCase().includes(query);
             if (selectedStatusIds.length > 0) return matchesSearch && selectedStatusIds.includes(c.statusId);
@@ -321,7 +381,6 @@
             emptyState.classList.remove('hidden');
         } else {
             emptyState.classList.add('hidden');
-            // Sort by name for consistency
             filtered.sort((a,b) => a.name.localeCompare(b.name)).forEach(row => {
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-50 transition-colors';
@@ -345,6 +404,7 @@
 
     window.filterByBadge = (type, el) => {
         selectedStatusIds = [];
+        updateBadgeVisuals();
         renderStatusList();
         if (activeBadgeType === type) { activeBadgeType = null; moveSlider(null); }
         else { activeBadgeType = type; moveSlider(el); }
@@ -371,6 +431,26 @@
         reviewBadge.innerHTML = `${String(reviewCount).padStart(2, '0')} Review Needed`;
         pendingBadge.innerHTML = `${String(pendingCount).padStart(2, '0')} Pending`;
 
+        // Visibility Logic for discovery label and filter badge
+        if (selectedStatusIds.length > 0) {
+            filterBadgeCount.innerHTML = selectedStatusIds.length;
+            filterBadgeCount.classList.add('visible');
+            dropdownBtn.classList.add('dots-btn-active');
+            moreHintLabel.style.opacity = '0';
+            moreHintLabel.style.width = '0';
+            moreHintLabel.style.padding = '0';
+            moreHintLabel.style.margin = '0';
+            moreHintLabel.style.border = 'none';
+        } else {
+            filterBadgeCount.classList.remove('visible');
+            dropdownBtn.classList.remove('dots-btn-active');
+            moreHintLabel.style.opacity = '1';
+            moreHintLabel.style.width = 'auto';
+            moreHintLabel.style.padding = '1px 6px';
+            moreHintLabel.style.margin = '0 0 0 6px';
+            moreHintLabel.style.border = '1px solid #dbeafe';
+        }
+
         const hasClearOrReviewed = selectedStatusIds.includes('clear') || selectedStatusIds.includes('reviewed');
         if (hasClearOrReviewed) {
             let total = 0;
@@ -386,16 +466,19 @@
 
     function renderStatusList() {
         statusListEl.innerHTML = '';
-        statusDefinitions.forEach(status => {
+        const stickyStatusIds = ['in_progress', 'review_needed', 'pending_candidate'];
+        const dropdownStatuses = statusDefinitions.filter(s => !stickyStatusIds.includes(s.id));
+
+        dropdownStatuses.forEach(status => {
             const div = document.createElement('div');
-            div.className = 'flex items-center px-2 py-1.5 hover:bg-slate-50 cursor-pointer text-sm rounded transition-colors';
+            div.className = 'flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm rounded transition-colors';
             const isChecked = selectedStatusIds.includes(status.id);
             const count = getStatusCount(status.id);
             div.innerHTML = `
                 <label class="flex items-center w-full cursor-pointer">
                     <input type="checkbox" class="hidden" ${isChecked ? 'checked' : ''}>
                     <span class="custom-checkbox"></span>
-                    <span class="text-slate-700 flex-1">${status.name}</span>
+                    <span class="text-slate-700 flex-1 font-medium">${status.name}</span>
                     <span class="text-[10px] text-slate-400 ml-2 font-mono">${String(count).padStart(2, '0')}</span>
                 </label>
             `;
@@ -408,6 +491,14 @@
     document.onclick = () => dropdownMenu.classList.remove('active');
     dropdownMenu.onclick = (e) => e.stopPropagation();
     searchInput.oninput = renderTable;
+    
+    clearDropdownBtn.onclick = (e) => {
+        selectedStatusIds = [];
+        updateBadgeVisuals();
+        renderStatusList();
+        renderTable();
+    };
+
     resetBtn.onclick = () => {
         selectedStatusIds = []; activeBadgeType = null; searchInput.value = '';
         moveSlider(null); updateBadgeVisuals(); renderStatusList(); renderTable();

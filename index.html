@@ -94,18 +94,18 @@
             opacity: 1;
         }
 
-        /* Adjusted Eye-Catching Notification Badge for 2-digit numbers */
+        /* High-visibility Pulsing Pill Badge */
         #filter-count-badge {
             position: absolute;
             top: -6px;
-            right: -8px;
+            right: -10px;
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
             font-size: 10px;
             font-weight: 800;
-            min-width: 20px;
-            height: 20px;
-            padding: 0 5px;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 6px;
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -128,7 +128,6 @@
             100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
 
-        /* Discovery Enhancement: "More" Label */
         #more-status-hint {
             font-size: 10px;
             font-weight: 700;
@@ -141,6 +140,7 @@
             text-transform: uppercase;
             letter-spacing: 0.025em;
             transition: opacity 0.2s;
+            display: inline-block;
         }
 
         .dots-btn-active {
@@ -227,7 +227,6 @@
             </div>
 
             <div class="relative">
-                <!-- UI Enhancement: Dots button with "More" label for Discovery -->
                 <button id="status-dots-btn" class="p-1.5 px-3 hover:bg-slate-50 rounded text-slate-400 relative transition-all border border-slate-200 flex items-center justify-center bg-white shadow-sm">
                     <i class="fa fa-ellipsis-v text-xs"></i>
                     <span id="more-status-hint">More</span>
@@ -402,16 +401,36 @@
         }
     }
 
+    // UPDATED: Sync clicking sticky badges with dropdown status selection
     window.filterByBadge = (type, el) => {
-        selectedStatusIds = [];
+        if (type === 'ready_onboarding') {
+            if (activeBadgeType === 'ready_onboarding') {
+                selectedStatusIds = [];
+                activeBadgeType = null;
+                moveSlider(null);
+            } else {
+                // Auto-select corresponding statuses in dropdown
+                selectedStatusIds = ['clear', 'reviewed'];
+                activeBadgeType = 'ready_onboarding';
+                moveSlider(el);
+            }
+        } else {
+            selectedStatusIds = []; // Clear other dropdown filters
+            if (activeBadgeType === type) { 
+                activeBadgeType = null; 
+                moveSlider(null); 
+            } else { 
+                activeBadgeType = type; 
+                moveSlider(el); 
+            }
+        }
         updateBadgeVisuals();
         renderStatusList();
-        if (activeBadgeType === type) { activeBadgeType = null; moveSlider(null); }
-        else { activeBadgeType = type; moveSlider(el); }
         renderTable();
     };
 
     function toggleStatus(id) {
+        // If user manually interacts with dropdown, we untether from sticky badge mode
         activeBadgeType = null;
         moveSlider(null);
         if (selectedStatusIds.includes(id)) selectedStatusIds = selectedStatusIds.filter(sid => sid !== id);
@@ -431,31 +450,28 @@
         reviewBadge.innerHTML = `${String(reviewCount).padStart(2, '0')} Review Needed`;
         pendingBadge.innerHTML = `${String(pendingCount).padStart(2, '0')} Pending`;
 
-        // Visibility Logic for discovery label and filter badge
         if (selectedStatusIds.length > 0) {
             filterBadgeCount.innerHTML = selectedStatusIds.length;
             filterBadgeCount.classList.add('visible');
             dropdownBtn.classList.add('dots-btn-active');
-            moreHintLabel.style.opacity = '0';
-            moreHintLabel.style.width = '0';
-            moreHintLabel.style.padding = '0';
-            moreHintLabel.style.margin = '0';
-            moreHintLabel.style.border = 'none';
+            moreHintLabel.style.display = 'none';
         } else {
             filterBadgeCount.classList.remove('visible');
             dropdownBtn.classList.remove('dots-btn-active');
-            moreHintLabel.style.opacity = '1';
-            moreHintLabel.style.width = 'auto';
-            moreHintLabel.style.padding = '1px 6px';
-            moreHintLabel.style.margin = '0 0 0 6px';
-            moreHintLabel.style.border = '1px solid #dbeafe';
+            moreHintLabel.style.display = 'inline-block';
         }
 
         const hasClearOrReviewed = selectedStatusIds.includes('clear') || selectedStatusIds.includes('reviewed');
-        if (hasClearOrReviewed) {
+        if (hasClearOrReviewed || activeBadgeType === 'ready_onboarding') {
             let total = 0;
-            if (selectedStatusIds.includes('clear')) total += getStatusCount('clear');
-            if (selectedStatusIds.includes('reviewed')) total += getStatusCount('reviewed');
+            // Use selected IDs if they exist, otherwise the badge definition
+            if (selectedStatusIds.includes('clear') || selectedStatusIds.includes('reviewed')) {
+                if (selectedStatusIds.includes('clear')) total += getStatusCount('clear');
+                if (selectedStatusIds.includes('reviewed')) total += getStatusCount('reviewed');
+            } else {
+                total = onboardingCount;
+            }
+            
             clearBadge.innerHTML = `${String(total).padStart(2, '0')} Ready For Onboarding`;
             clearBadge.classList.replace('bg-[#4ade80]', 'bg-green-600');
         } else {
@@ -494,6 +510,8 @@
     
     clearDropdownBtn.onclick = (e) => {
         selectedStatusIds = [];
+        activeBadgeType = null;
+        moveSlider(null);
         updateBadgeVisuals();
         renderStatusList();
         renderTable();
